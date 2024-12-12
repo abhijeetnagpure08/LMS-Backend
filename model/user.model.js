@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema({
             ref:'Course'
         }
     ],
-    photoURL: {
+    photoUrl: {
         type: String,
         default: ""
     }
