@@ -1,7 +1,7 @@
 import { User } from "../model/user.model.js";
 import bcrypt from "bcrypt";
 import { generateToken } from "../utils/generateToken.js";
-import { deleteMediaFromCloudinary, uploadmedia } from "../utils/cloudinary.js";
+import { deleteMediaFromCloudinary, uploadMedia } from "../utils/cloudinary.js";
 
 export const register = async (req, res) => {
   try {
@@ -129,7 +129,7 @@ export const getUserprofile = async (req,res) => {
 //             deleteMediaFromCloudinary(publicId);
 //         }
 
-//         const cloudResponse = await uploadmedia(profilePhoto.path);
+//         const cloudResponse = await uploadMedia(profilePhoto.path);
 //         const photoUrl = cloudResponse.secure_url;
 
 //         const updatedData = {name,photoUrl};
@@ -170,7 +170,7 @@ export const updateProfile = async (req,res) => {
       }
 
       // upload new photo
-      const cloudResponse = await uploadmedia(profilePhoto.path);
+      const cloudResponse = await uploadMedia(profilePhoto.path);
       const photoUrl = cloudResponse.secure_url;
 
       const updatedData = {name, photoUrl};
