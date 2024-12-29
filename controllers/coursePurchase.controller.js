@@ -3,6 +3,9 @@ import { CoursePurchase } from "../model/coursePurchase.model.js";
 import { Course } from "../model/course.model.js";
 import dotenv from "dotenv";
 dotenv.config({});
+import { v4 as uuidv4 } from 'uuid';
+import { User } from "../model/user.model.js";
+import { Lecture } from "../model/lecture.model.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -137,30 +140,103 @@ export const stripeWebhook = async (req, res) => {
   res.status(200).send();
 };
 
-export const createCoursePurcahse = async (req, res) => {
+// export const createCoursePurchase = async (req, res) => {
+//   try {
+//     const userId = req.id;
+//     const { courseId } = req.params;
+
+//     const course = await Course.findById(courseId);
+//     if (!course) return res.status(404).json({ message: "Course not found!" });
+
+//     const newPurchase = await CoursePurchase.create({
+//       courseId,
+//       userId,
+//       amount: course.coursePrice,
+//       status: "completed",
+//     });
+
+//     return res.status(200).json({
+//       message: "Course Purchase Successfully",
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({
+//       message: "Failed to get course by id",
+//     });
+//   }
+// };
+
+
+export const createCoursePurchase = async (req, res) => {
   try {
     const userId = req.id;
     const { courseId } = req.params;
 
-    const course = await Course.findById(courseId);
-    if (!course) return res.status(404).json({ message: "Course not found!" });
+    // Find the course
+    const course = await Course.findById(courseId).populate("lectures");
+    if (!course) {
+      return res.status(404).json({ message: "Course not found!" });
+    }
 
-    const newPurchase = await CoursePurchase.create({
+    // Check if the user already purchased this course
+    let purchase = await CoursePurchase.findOne({ userId, courseId });
+
+    if (!purchase) {
+      // If no existing purchase, create a new one
+      const paymentId = uuidv4(); // Generate a new unique payment ID
+      purchase = new CoursePurchase({
+        courseId,
+        userId,
+        paymentId,
+        amount: course.coursePrice,
+        status: "completed",
+      });
+
+      await purchase.save();
+    }
+
+    await Course.findByIdAndUpdate(
       courseId,
+      { $addToSet: { enrolledStudents: userId } }, // Add userId only if it's not already in the array
+      { new: true } // Optionally return the updated document
+    );
+    // course.enrolledStudents.push(userId);
+    // await course.save();
+
+    // Update user's enrolledCourses (ensure no duplicate IDs)
+    await User.findByIdAndUpdate(
       userId,
-      amount: course.coursePrice,
-      status: "completed",
-    });
+      { $addToSet: { enrolledCourse: courseId } }, // Add courseId only if it's not already in the array
+      { new: true } // Optionally return the updated document
+    );
+
+    // const user = await User.findById(userId);
+    // user.enrolledCourse.push(courseId)
+
+    // await user.save();
+
+    // Update all lectures in the course to make them non-preview
+    if (course.lectures && course.lectures.length > 0) {
+      await Lecture.updateMany(
+        { _id: { $in: course.lectures } },
+        { $set: { isPreviewFree: true } }
+      );
+    }
+
     return res.status(200).json({
-      message: "Course Purchase Successfully",
+      message: "Course purchased successfully",
+      paymentId: purchase.paymentId,
+      courseId,
     });
   } catch (error) {
-    console.log(error);
+    console.error("Error in course purchase:", error);
     return res.status(500).json({
-      message: "Failed to get course by id",
+      message: "Failed to complete course purchase",
     });
   }
 };
+
+
 
 export const getCourseDetailWithPurchaseStatus = async (req, res) => {
   try {
@@ -177,9 +253,6 @@ export const getCourseDetailWithPurchaseStatus = async (req, res) => {
     if (!course) {
       return res.status(404).json({ message: "course not found!" });
     }
-
-    course.enrolledStudents.push(userId);
-    await course.save();
 
     return res.status(200).json({
       course,
@@ -207,3 +280,60 @@ export const getAllPurchasedCourse = async (_, res) => {
     console.log(error);
   }
 };
+
+
+
+// export const createCoursePurchase = async (req, res) => {
+//   try {
+//     const userId = req.id; // Assuming the user ID is extracted from a middleware
+//     const { courseId } = req.params;
+
+//     // Fetch the course by ID
+//     const course = await Course.findById(courseId);
+//     if (!course) {
+//       return res.status(404).json({ message: "Course not found!" });
+//     }
+
+//     // Create a new purchase record
+//     const newPurchase = await CoursePurchase.create({
+//       courseId,
+//       userId,
+//       amount: course.coursePrice,
+//       status: "completed",
+//     });
+
+//     // Make all lectures of the course visible to the user by updating `isPreviewFree`
+//     if (course.lectures && course.lectures.length > 0) {
+//       await Lecture.updateMany(
+//         { _id: { $in: course.lectures } },
+//         { $set: { isPreviewFree: true } }
+//       );
+//     }
+
+//     // Update the user's enrolledCourses
+//     await User.findByIdAndUpdate(
+//       userId,
+//       { $addToSet: { enrolledCourses: courseId } }, // Add the course ID if not already present
+//       { new: true }
+//     );
+
+//     // Update the course's enrolledStudents
+//     await Course.findByIdAndUpdate(
+//       courseId,
+//       { $addToSet: { enrolledStudents: userId } }, // Add the user ID if not already present
+//       { new: true }
+//     );
+
+//     // Send a success response
+//     return res.status(200).json({
+//       success: true,
+//       message: "Course purchased successfully!",
+//     });
+//   } catch (error) {
+//     console.error("Error in createCoursePurchase:", error);
+//     return res.status(500).json({
+//       success: false,
+//       message: "Failed to purchase course",
+//     });
+//   }
+// };

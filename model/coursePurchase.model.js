@@ -19,10 +19,10 @@ const coursePurchaseSchema = new mongoose.Schema({
         enum:['pending', 'completed', 'failed'],
         default:'pending'
     },
-    // paymentId:{
-    //     type:String,
-    //     required:true
-    // }
+    paymentId:{
+        type:String,
+        required:true
+    }
 
 },{timestamps:true});
 export const CoursePurchase = mongoose.model('CoursePurchase', coursePurchaseSchema);

@@ -91,7 +91,13 @@ export const logout = async (_,res) => {
 export const getUserprofile = async (req,res) => {
     try {
         const userId = req.id;
-        const user = await User.findById(userId).select("-password");
+        const user = await User.findById(userId).select("-password").populate({
+          path: "enrolledCourse", // Populate the `enrolledCourses` field
+          populate: {
+            path: "creator", // Populate the `creator` field inside each `enrolledCourse`
+            select: "name email", // Optionally select specific fields from `creator`
+          },
+        });
         if(!user){
             return res.status(404).json({
                 message:"profile  not found",
