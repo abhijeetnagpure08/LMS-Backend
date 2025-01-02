@@ -5,8 +5,8 @@ import { deleteMediaFromCloudinary, uploadMedia } from "../utils/cloudinary.js";
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) {
+    const { name, email, role, password } = req.body;
+    if (!name || !email || !role || !password) {
       return res.status(400).json({
         success: false,
         message: "All fields are required.",
@@ -25,6 +25,7 @@ export const register = async (req, res) => {
     await User.create({
       name,
       email,
+      role,
       password:hashedpassword,
     });
     return res.status(200).json({
@@ -116,45 +117,6 @@ export const getUserprofile = async (req,res) => {
       });
     }
 }
-
-// export const updateProfile = async (req,res) => {
-//     try {
-//         const userId = req.id;
-//         const {name} = req.body;
-//         const profilePhoto = req.file;
-
-//         const user = await User.findById(userId);
-//         if(!user){
-//             return res.status(404).json({
-//                 message:"User not found",
-//                 suucess: false,
-//             })
-//         }
-//         if(user.photoURL){
-//             const publicId = user.photoURL.split("/").pop().split(".")[0];
-//             deleteMediaFromCloudinary(publicId);
-//         }
-
-//         const cloudResponse = await uploadMedia(profilePhoto.path);
-//         const photoUrl = cloudResponse.secure_url;
-
-//         const updatedData = {name,photoUrl};
-//         const updateUser = await User.findById(userId, updatedData, {new: true});
-
-//         return res.status(200).json({
-//             success: true,
-//             user: updateUser,
-//             message: "profile updated successfully",
-//           });
-
-//     } catch (error) {
-//         console.log(error);
-//         return res.status(500).json({
-//             success: false,
-//             message: "Failed to update profile",
-//           });
-//     }
-// }
 
 export const updateProfile = async (req,res) => {
   try {
